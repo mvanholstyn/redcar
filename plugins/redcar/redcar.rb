@@ -670,6 +670,10 @@ Redcar.environment: #{Redcar.environment}
         end
       end
     end
+    
+    class InsertAtEndOfSelectedLinesCommand < Redcar::DocumentCommand
+      
+    end
 
     # define commands from SelectTab1Command to SelectTab9Command
     (1..9).each do |tab_num|
@@ -772,6 +776,7 @@ Redcar.environment: #{Redcar.environment}
         link "Cmd+A",       SelectAllCommand
         link "Ctrl+W",      SelectWordCommand
         link "Cmd+B",       ToggleBlockSelectionCommand
+        link "Cmd+Alt+A",   InsertAtEndOfSelectedLinesCommand
         #link "Escape", AutoCompleter::AutoCompleteCommand
         link "Ctrl+Escape",  AutoCompleter::MenuAutoCompleterCommand
 
@@ -844,6 +849,8 @@ Redcar.environment: #{Redcar.environment}
         link "Ctrl+A",       SelectAllCommand
         link "Ctrl+Alt+W",   SelectWordCommand
         link "Ctrl+B",       ToggleBlockSelectionCommand
+        link "Ctrl+Alt+A",   InsertAtEndOfSelectedLinesCommand
+
         link "Ctrl+Space",       AutoCompleter::AutoCompleteCommand
         link "Ctrl+Shift+Space", AutoCompleter::MenuAutoCompleterCommand
 
@@ -947,6 +954,7 @@ Redcar.environment: #{Redcar.environment}
               item "Line", SelectLineCommand
               item "Current Word", SelectWordCommand
               item "Toggle Block Selection", ToggleBlockSelectionCommand
+              item "Insert at the End if Selected Lines", InsertAtEndOfSelectedLinesCommand
             end
           end
           
