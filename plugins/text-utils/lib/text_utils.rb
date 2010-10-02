@@ -128,12 +128,8 @@ module Redcar
       def comment_line(doc, line_ix, comment, column)
         text = doc.get_line(line_ix)
         comment_text = "#{comment} "
-        unless text =~ /^\s*#{Regexp.escape(comment)}/
-          doc.insert(doc.offset_at_line(line_ix) + column, comment_text)
-          [doc.offset_at_line(line_ix) + column, comment_text.size]
-        else
-          [0, 0]
-        end
+        doc.insert(doc.offset_at_line(line_ix) + column, comment_text)
+        [doc.offset_at_line(line_ix) + column, comment_text.size]
       end
 
       def uncomment_line(doc, line_ix, comment)
