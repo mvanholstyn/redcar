@@ -1,5 +1,5 @@
 module Redcar
-  class TextUtils
+  class Comment
     def self.menus
       Menu::Builder.build do
         sub_menu "Edit" do
