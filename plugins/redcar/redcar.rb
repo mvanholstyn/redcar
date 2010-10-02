@@ -770,6 +770,7 @@ Redcar.environment: #{Redcar.environment}
         link "Cmd+Ctrl+F",  DocumentSearch::SearchAndReplaceCommand
         link "Cmd+Shift+F", Redcar::FindInProject::OpenSearch
         link "Cmd+A",       SelectAllCommand
+        link "Cmd+Shift+L", SelectLineCommand
         link "Ctrl+W",      SelectWordCommand
         link "Cmd+B",       ToggleBlockSelectionCommand
         #link "Escape", AutoCompleter::AutoCompleteCommand
@@ -842,6 +843,7 @@ Redcar.environment: #{Redcar.environment}
         link "F3",           DocumentSearch::RepeatPreviousSearchForwardCommand
         link "Ctrl+Shift+F", Redcar::FindInProject::OpenSearch
         link "Ctrl+A",       SelectAllCommand
+        link "Ctrl+Shift+L", SelectLineCommand
         link "Ctrl+Alt+W",   SelectWordCommand
         link "Ctrl+B",       ToggleBlockSelectionCommand
         link "Ctrl+Space",       AutoCompleter::AutoCompleteCommand
