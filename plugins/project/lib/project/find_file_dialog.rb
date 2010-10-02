@@ -25,8 +25,7 @@ module Redcar
       end
 
       def paths_for(filter)
-        paths = recent_files if filter.length < 2
-        paths ||= find_files_from_list(filter, recent_files) + find_files(filter, project.path)
+        paths = find_files_from_list(filter, recent_files) + find_files(filter, project.path)
         paths.uniq
       end
 
@@ -35,7 +34,7 @@ module Redcar
         duplicates = duplicates(display_paths)
         display_paths.each_with_index do |dp, i|
           if duplicates.include? dp
-            display_paths[i] = display_path(full_paths[i], project.path.split('/')[0..-2].join('/'))
+            display_paths[i] = display_path(full_paths[i], project.path)
           end
         end
       end
@@ -44,7 +43,7 @@ module Redcar
         paths = paths_for filter
         @last_list = paths
         full_paths = paths
-        display_paths = full_paths.map { |path| display_path(path) }
+        display_paths = full_paths.map { |path| display_path(path, project.path) }
         if display_paths.uniq.length < full_paths.length
           display_paths = expand_duplicates(display_paths, full_paths)
         end
@@ -78,14 +77,14 @@ module Redcar
           n = -100
         end
         
-        if path.count('/') > 0
+        if path.count('/') > 1
           count_back = [-path.count('/'), n].max
           path.split("/").last +
             " (" +
             path.split("/")[count_back..-2].join("/") +
             ")"
         else
-          path
+          path.sub(/^\//, '')
         end
       end
       
@@ -106,7 +105,11 @@ module Redcar
       
       def find_files(text, directories)
         filter_and_rank_by(project.all_files.sort, text) do |fn|
-          fn.split("/").last
+          # fn.split("/").last
+          if fn.index(directories) == 0
+            fn = fn[directories.length..-1]
+          end
+          fn.split("/")
         end
       end
     end
