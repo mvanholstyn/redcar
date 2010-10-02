@@ -34,13 +34,9 @@ module Redcar
 
     class ToggleBlockCommentCommand < DocumentCommand
 	    def execute
-        # TODO: Needs to implement better bundle handling so that we can look up the comment characters from the bundles instead of having them hard-coded.
-        comment = case Redcar::app.focussed_notebook_tab.edit_view.grammar
-          when "Ruby" then "#"
-          when "Ruby on Rails" then "#"
-          when "Java" then "//"
-          else "--"
-        end
+        comment_character = lookup_comment_character(doc)
+
+        return unless comment_character
 
         cursor = CursorHandler.new(doc)
         doc.compound do
@@ -56,7 +52,7 @@ module Redcar
               end
 
               column = lines.map { |line| line.index(/[^\s]/) || 0 }.min
-              uncomment = lines.all? { |line| line =~ /^\s*#{Regexp.escape(comment)}/ }
+              uncomment = lines.all? { |line| line =~ /^\s*#{Regexp.escape(comment_character)}/ }
 
               cursor_at_start = cursor.cursor_offset == doc.selection_range.begin
               start_selection = doc.selection_range.begin
@@ -64,14 +60,14 @@ module Redcar
 
               first_line_ix.upto(last_line_ix) do |line_ix|
                 if uncomment
-                  chars_removed_index, chars_removed = uncomment_line(doc, line_ix, comment)
+                  chars_removed_index, chars_removed = uncomment_line(doc, line_ix, comment_character)
 
                   if chars_removed > 0 and start_selection > chars_removed_index
                     start_selection -= chars_removed
                   end
                   end_selection -= chars_removed
                 else
-                  chars_added_index, chars_added = comment_line(doc, line_ix, comment, column)
+                  chars_added_index, chars_added = comment_line(doc, line_ix, comment_character, column)
 
                   if chars_added > 0 and start_selection > chars_added_index
                     start_selection += chars_added
@@ -84,17 +80,18 @@ module Redcar
 
             # TODO: Support commenting just the selection? via /* */ or # to the end of the line
             # TODO: preserve selection when a single line (part or whole) is selected
+            # TODO: handle scenario when selection from end of one line to start of next line
             else
               column = doc.get_line(doc.cursor_line).index(/[^\s]/) || 0
-              uncomment = doc.get_line(doc.cursor_line) =~ /^\s*#{Regexp.escape(comment)}/
+              uncomment = doc.get_line(doc.cursor_line) =~ /^\s*#{Regexp.escape(comment_character)}/
               if uncomment
-                chars_removed_index, chars_removed = uncomment_line(doc, doc.cursor_line, comment)
+                chars_removed_index, chars_removed = uncomment_line(doc, doc.cursor_line, comment_character)
 
                 if chars_removed > 0 and cursor.cursor_offset >= chars_removed_index
                   doc.cursor_offset = cursor.cursor_offset - chars_removed
                 end
               else
-                chars_added_index, chars_added = comment_line(doc, doc.cursor_line, comment, column)
+                chars_added_index, chars_added = comment_line(doc, doc.cursor_line, comment_character, column)
 
                 if chars_added > 0 and cursor.cursor_offset >= chars_added_index
                   doc.cursor_offset = cursor.cursor_offset + chars_added
@@ -102,6 +99,15 @@ module Redcar
               end
             end
           end
+        end
+      end
+
+      # TODO: Needs to implement better bundle handling so that we can look up the comment characters from the bundles instead of having them hard-coded.
+      def lookup_comment_character(doc)
+        case doc.edit_view.grammar
+          when "Ruby" then "#"
+          when "Ruby on Rails" then "#"
+          when "Java" then "//"
         end
       end
 
@@ -125,16 +131,16 @@ module Redcar
         [first_line, last_line]
       end
 
-      def comment_line(doc, line_ix, comment, column)
+      def comment_line(doc, line_ix, comment_character, column)
         text = doc.get_line(line_ix)
-        comment_text = "#{comment} "
+        comment_text = "#{comment_character} "
         doc.insert(doc.offset_at_line(line_ix) + column, comment_text)
         [doc.offset_at_line(line_ix) + column, comment_text.size]
       end
 
-      def uncomment_line(doc, line_ix, comment)
+      def uncomment_line(doc, line_ix, comment_character)
         text = doc.get_line(line_ix)
-        if text =~ /^(\s*)(#{Regexp.escape(comment)}\s?)/
+        if text =~ /^(\s*)(#{Regexp.escape(comment_character)}\s?)/
           doc.delete(doc.offset_at_line(line_ix) + $1.length, $2.length)
           [doc.offset_at_line(line_ix) + $1.length, $2.length]
         else
