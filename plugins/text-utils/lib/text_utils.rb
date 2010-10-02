@@ -19,8 +19,6 @@ module Redcar
     end
 
     class CursorHandler
-      ##
-      # Read cursor position and adjust line offset
       def initialize(doc)
         @doc = doc
         @cursor_line = @doc.cursor_line
@@ -29,20 +27,12 @@ module Redcar
         line = @doc.get_line(@cursor_line)
       end
 
-      ##
-      # Adjust cursor offset and make visible
-      def adjust
-        @doc.cursor_offset = cursor_offset
-      end
-      
       def cursor_offset
         @doc.offset_at_line(@cursor_line) + @line_offset
       end
     end
 
-    # Toggle block command.
     class ToggleBlockCommentCommand < DocumentCommand
-      # The execution reuses the same dialog.
 	    def execute
         # TODO: Needs to implement better bundle handling so that we can look up the comment characters from the bundles instead of having them hard-coded.
         comment = case Redcar::app.focussed_notebook_tab.edit_view.grammar
@@ -55,19 +45,16 @@ module Redcar
         cursor = CursorHandler.new(doc)
         doc.compound do
           # TODO: Prevent tidy from running?
+          # TODO: What is this edit_view.delay_parsing?
           doc.edit_view.delay_parsing do
-            if doc.selection?
-              first_line_ix = doc.line_at_offset(doc.selection_range.begin)
-              last_line_ix  = doc.line_at_offset(doc.selection_range.end)
-              if doc.selection_range.end == doc.offset_at_line(last_line_ix)
-                last_line_ix -= 1
-              end
+            if multi_line_selection?(doc)
+              first_line_ix, last_line_ix = first_and_last_line_for_selection(doc)
 
               lines = []
               first_line_ix.upto(last_line_ix) do |line_ix|
                 lines << doc.get_line(line_ix)
               end
-              
+
               column = lines.map { |line| line.index(/[^\s]/) || 0 }.min
               uncomment = lines.all? { |line| line =~ /^\s*#{Regexp.escape(comment)}/ }
 
@@ -77,31 +64,65 @@ module Redcar
 
               first_line_ix.upto(last_line_ix) do |line_ix|
                 if uncomment
-                  uncomment_line(doc, line_ix, comment)
+                  chars_removed_index, chars_removed = uncomment_line(doc, line_ix, comment)
+
+                  if chars_removed > 0 and start_selection > chars_removed_index
+                    start_selection -= chars_removed
+                  end
+                  end_selection -= chars_removed
                 else
-                  chars_added = comment_line(doc, line_ix, comment, column)
-                  if doc.offset_at_line(line_ix) + column < start_selection
+                  chars_added_index, chars_added = comment_line(doc, line_ix, comment, column)
+
+                  if chars_added > 0 and start_selection > chars_added_index
                     start_selection += chars_added
                   end
                   end_selection += chars_added
                 end
               end
 
-              # TODO: keep selection & cursor for uncomment
               doc.set_selection_range(cursor_at_start ? start_selection : end_selection, cursor_at_start ? end_selection : start_selection)
+
+            # TODO: Support commenting just the selection? via /* */ or # to the end of the line
+            # TODO: preserve selection when a single line (part or whole) is selected
             else
-              line_ix = doc.cursor_line
-              column = doc.get_line(line_ix).index(/[^\s]/) || 0
-              uncomment = doc.get_line(line_ix) =~ /^\s*#{Regexp.escape(comment)}/
+              column = doc.get_line(doc.cursor_line).index(/[^\s]/) || 0
+              uncomment = doc.get_line(doc.cursor_line) =~ /^\s*#{Regexp.escape(comment)}/
               if uncomment
-                uncomment_line(doc, line_ix, comment)
+                chars_removed_index, chars_removed = uncomment_line(doc, doc.cursor_line, comment)
+
+                if chars_removed > 0 and cursor.cursor_offset >= chars_removed_index
+                  doc.cursor_offset = cursor.cursor_offset - chars_removed
+                end
               else
-                chars_added = comment_line(doc, line_ix, comment, column)
-                doc.cursor_offset = cursor.cursor_offset + chars_added
+                chars_added_index, chars_added = comment_line(doc, doc.cursor_line, comment, column)
+
+                if chars_added > 0 and cursor.cursor_offset >= chars_added_index
+                  doc.cursor_offset = cursor.cursor_offset + chars_added
+                end
               end
             end
           end
         end
+      end
+
+      def single_line_selection?(doc)
+        first_line, last_line = first_and_last_line_for_selection(doc)
+        doc.selection? and first_line == last_line
+      end
+
+      def multi_line_selection?(doc)
+        doc.selection? and not single_line_selection?(doc)
+      end
+
+      def first_and_last_line_for_selection(doc)
+        first_line = doc.line_at_offset(doc.selection_range.begin)
+        last_line = doc.line_at_offset(doc.selection_range.end)
+
+        if doc.selection_range.end == doc.offset_at_line(last_line)
+          last_line -= 1
+        end
+
+        [first_line, last_line]
       end
 
       def comment_line(doc, line_ix, comment, column)
@@ -109,16 +130,20 @@ module Redcar
         comment_text = "#{comment} "
         unless text =~ /^\s*#{Regexp.escape(comment)}/
           doc.insert(doc.offset_at_line(line_ix) + column, comment_text)
-          comment_text.size
+          [doc.offset_at_line(line_ix) + column, comment_text.size]
         else
-          0
+          [0, 0]
         end
       end
 
       def uncomment_line(doc, line_ix, comment)
-        text = doc.get_line(line_ix).chomp
-        text = text.sub(/^(\s*)#{Regexp.escape(comment)}\s*/, '\1')
-        doc.replace_line(line_ix, text)
+        text = doc.get_line(line_ix)
+        if text =~ /^(\s*)(#{Regexp.escape(comment)}\s?)/
+          doc.delete(doc.offset_at_line(line_ix) + $1.length, $2.length)
+          [doc.offset_at_line(line_ix) + $1.length, $2.length]
+        else
+          [0, 0]
+        end
       end
     end
   end
