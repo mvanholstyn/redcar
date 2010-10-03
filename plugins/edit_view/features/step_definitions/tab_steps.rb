@@ -81,8 +81,21 @@ end
 Then /^I should (not )?see "(.*)" in the edit tab$/ do |bool, content|
   content = content.gsub("\\n", "\n")
   bool = !bool
-  matcher = bool ? be_true : be_false
-  focussed_tab.edit_view.document.to_s.include?(content).should matcher
+  if bool
+    focussed_tab.edit_view.document.to_s.should include(content)
+  else
+    focussed_tab.edit_view.document.to_s.should_not include(content)
+  end
+end
+
+Then /^I should (not )?see in the edit tab$/ do |bool, content|
+  content = content.gsub("\\n", "\n")
+  bool = !bool
+  if bool
+    focussed_tab.edit_view.document.to_s.should include(content)
+  else
+    focussed_tab.edit_view.document.to_s.should_not include(content)
+  end
 end
 
 Then /^my active tab should be "([^"]*)"$/ do |name|
