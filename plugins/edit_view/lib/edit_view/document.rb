@@ -19,6 +19,7 @@ module Redcar
       attr_accessor :default_mirror
     end
     
+    attr_accessor :original_text
     attr_reader :mirror, :edit_view
     
     def initialize(edit_view)
@@ -72,6 +73,7 @@ module Redcar
         object.before_save(self)
       end
       @mirror.commit(to_s)
+      self.original_text = to_s
       @edit_view.reset_last_checked
       set_modified(false)
     end
@@ -673,7 +675,8 @@ module Redcar
       previous_line      = cursor_line
       top_line           = smallest_visible_line
       
-      self.text          = mirror.read
+      self.original_text = mirror.read
+      self.text          = self.original_text.dup
       
       @modified          = false
       @edit_view.title   = title_with_star
@@ -696,7 +699,7 @@ module Redcar
    
     def title_with_star
       if mirror
-        if @modified
+        if to_s != self.original_text
           "*" + mirror.title
         else
           mirror.title
