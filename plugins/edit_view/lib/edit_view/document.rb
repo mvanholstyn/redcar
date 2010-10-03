@@ -213,7 +213,24 @@ module Redcar
     # @param [String] text  replacement text
     def replace(offset, length, text)
       text = text.gsub(delim, "") if single_line?
+      if @preserve_selection_and_cursor && selection = selection?
+        cursor_position = cursor_offset
+        start_position  = selection_range.begin
+        end_position    = selection_range.end
+
+        if offset <= start_position && offset + length <= start_position
+          cursor_position += (text.length - length)
+          start_position  += (text.length - length)
+          end_position    += (text.length - length)
+        elsif offset < end_position && offset + length < end_position
+          cursor_position += (text.length - length) if cursor_position == end_position
+          end_position    += (text.length - length)
+        end
+      end
       controller.replace(offset, length, text)
+      if @preserve_selection_and_cursor && selection
+        set_selection_range(cursor_position, cursor_position == start_position ? end_position : start_position)
+      end
     end
     
     # Length of the document in characters
@@ -668,7 +685,21 @@ module Redcar
     def compound
       @edit_view.controller.compound { yield }
     end
+
+    def preserve_selection_and_cursor
+      begin_preserve_selection_and_cursor
+      controllers(AutoIndenter::DocumentController).first.disable { yield }
+      end_preserve_selection_and_cursor
+    end
+
+    def begin_preserve_selection_and_cursor
+      @preserve_selection_and_cursor = true
+    end
     
+    def end_preserve_selection_and_cursor
+      @preserve_selection_and_cursor = false
+    end
+
     def update_from_mirror
       previous_line      = cursor_line
       top_line           = smallest_visible_line
