@@ -104,11 +104,7 @@ module Redcar
 
       # TODO: Needs to implement better bundle handling so that we can look up the comment characters from the bundles instead of having them hard-coded.
       def lookup_comment_character(doc)
-        case doc.edit_view.grammar
-          when "Ruby" then "#"
-          when "Ruby on Rails" then "#"
-          when "Java" then "//"
-        end
+        "#"
       end
 
       def single_line_selection?(doc)
