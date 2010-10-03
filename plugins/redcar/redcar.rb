@@ -419,24 +419,20 @@ Redcar.environment: #{Redcar.environment}
       def execute
         doc.compound do
           doc.edit_view.delay_parsing do
-            if doc.selection?
-              first_line_ix = doc.line_at_offset(doc.selection_range.begin)
-              last_line_ix  = doc.line_at_offset(doc.selection_range.end)
-              if doc.selection_range.end == doc.offset_at_line(last_line_ix)
-                last_line_ix -= 1
-              end
-              first_line_ix.upto(last_line_ix) do |line_ix|
-                indent_line(doc, line_ix)
-              end
-              start_selection = doc.offset_at_line(first_line_ix)
-              if last_line_ix == doc.line_count - 1
-                end_selection = doc.length
+            doc.preserve_selection_and_cursor do
+              if doc.selection?
+                first_line_ix = doc.line_at_offset(doc.selection_range.begin)
+                last_line_ix  = doc.line_at_offset(doc.selection_range.end)
+                if doc.selection_range.end == doc.offset_at_line(last_line_ix)
+                  last_line_ix -= 1
+                end
+                first_line_ix.upto(last_line_ix) do |line_ix|
+                  puts "Indent #{line_ix}"
+                  indent_line(doc, line_ix)
+                end
               else
-                end_selection = doc.offset_at_line(last_line_ix + 1)
+                indent_line(doc, doc.cursor_line)
               end
-              doc.set_selection_range(start_selection, end_selection)
-            else
-              indent_line(doc, doc.cursor_line)
             end
           end
         end
@@ -472,7 +468,6 @@ Redcar.environment: #{Redcar.environment}
     class IncreaseIndentCommand < ChangeIndentCommand
 
       def indent_line(doc, line_ix)
-        line            = doc.get_line(line_ix)
         if doc.edit_view.soft_tabs?
           whitespace = " "*doc.edit_view.tab_width
         else
