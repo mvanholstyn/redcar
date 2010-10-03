@@ -7,7 +7,6 @@ require 'redcar/usage'
 
 require 'redcar/ruby_extensions'
 require 'redcar/instance_exec'
-require 'redcar/usage'
 require 'regex_replace'
 
 require 'forwardable'
