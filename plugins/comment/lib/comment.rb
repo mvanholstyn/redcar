@@ -3,17 +3,17 @@ module Redcar
     def self.menus
       Menu::Builder.build do
         sub_menu "Edit" do
-          item "Toggle Block Comment", ToggleBlockCommentCommand
+          item "Toggle Comment", ToggleCommentCommand
         end
       end
     end
 
     def self.keymaps
       osx = Redcar::Keymap.build("main", :osx) do
-        link "Cmd+/", ToggleBlockCommentCommand
+        link "Cmd+/", ToggleCommentCommand
       end
       linwin = Redcar::Keymap.build("main", [:linux, :windows]) do
-        link "Ctrl+/", ToggleBlockCommentCommand
+        link "Ctrl+/", ToggleCommentCommand
       end
       [osx, linwin]
     end
@@ -32,7 +32,7 @@ module Redcar
       end
     end
 
-    class ToggleBlockCommentCommand < DocumentCommand
+    class ToggleCommentCommand < DocumentCommand
 	    def execute
         comment_character = lookup_comment_character(doc)
 
