@@ -177,6 +177,14 @@ When /^I replace the contents with "([^\"]*)"$/ do |contents|
   doc.cursor_offset = cursor_offset if cursor_offset
 end
 
+When /^I replace the contents with$/ do |contents|
+  contents = unescape_text(contents.to_s)
+  doc = Redcar::EditView.focussed_edit_view_document
+  cursor_offset = (contents =~ /<c>/)
+  doc.text = contents.gsub("<c>", "")
+  doc.cursor_offset = cursor_offset if cursor_offset
+end
+
 When /^I replace the contents with 100 lines of "([^"]*)" then "([^"]*)"$/ do |contents1, contents2|
   contents1 = unescape_text(contents1)
   contents2 = unescape_text(contents2)
